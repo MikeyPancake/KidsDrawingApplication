@@ -3,8 +3,10 @@ package com.udemy.kidsdrawingapplication
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
+import java.nio.file.Paths
 
 class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) {
 
@@ -15,6 +17,7 @@ class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) 
     private var mDrawPaint : Paint? = null
     private var mCanvasPaint : Paint? = null
     private var mBrushSize : Float = 0.toFloat()
+    private var mPaths = ArrayList<CustomPath>()
     private var color = Color.BLACK
     private var canvas : Canvas? =null
 
@@ -31,7 +34,7 @@ class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) 
         mDrawPaint!!.strokeJoin = Paint.Join.ROUND
         mDrawPaint!!.strokeCap = Paint.Cap.ROUND
         mCanvasPaint = Paint(Paint.DITHER_FLAG)
-        mBrushSize = 20.toFloat()
+        //mBrushSize = 20.toFloat() not needed as it is set in main activity
 
     }
 
@@ -51,6 +54,13 @@ class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) 
         // Canvas calls the draw bitmap, passes the bitmap you want to use, sets start position
         // and what to draw with
         canvas.drawBitmap(mCanvasBitmap!!, 0f, 0f, mCanvasPaint)
+
+        // adds path to the mPath variable
+        for (path in mPaths){
+            mDrawPaint!!.strokeWidth = path.brushThickness
+            mDrawPaint!!.color = path.color
+            canvas.drawPath(path, mDrawPaint!!)
+        }
 
         // Starts canvas as long as Draw path is empty
         if(!mDrawPath!!.isEmpty){
@@ -93,16 +103,30 @@ class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) 
             }
             // When you lift your finger up it creates the custom path
             MotionEvent.ACTION_UP -> {
+                // Adds path to Draw Path
+                mPaths.add(mDrawPath!!)
                 mDrawPath = CustomPath(color, mBrushSize)
             }
             else -> return false
         }
         // If nothing, reset
         invalidate()
-
         return true
+    }
 
+    fun setSizeForBrush(newSize: Float){
+        // Sets brush size based on screen dimension
+        mBrushSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+            newSize, resources.displayMetrics
+        )
+        mDrawPaint?.strokeWidth = mBrushSize
 
+    }
+
+    fun setColor(newColor: String){
+        // Parses colors
+        color = Color.parseColor(newColor)
+        mDrawPaint!!.color = color
     }
 
     internal inner class CustomPath (var color : Int, var brushThickness : Float) : Path() {
