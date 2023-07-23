@@ -11,31 +11,74 @@ import java.nio.file.Paths
 class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) {
 
     // TODO Step 1: Create application variables
-    // Global variables
+    // An variable of CustomPath inner class to use it further.
     private var mDrawPath : CustomPath? = null
+    // An instance of the Bitmap.
     private var mCanvasBitmap : Bitmap? = null
+    // The Paint class holds the style and color information about how to draw geometries, text and bitmaps.
     private var mDrawPaint : Paint? = null
+    // Instance of canvas paint view.
     private var mCanvasPaint : Paint? = null
+    // A variable for stroke/brush size to draw on the canvas.
     private var mBrushSize : Float = 0.toFloat()
-    private var mPaths = ArrayList<CustomPath>()
+    // A variable to hold a color of the stroke.
     private var color = Color.BLACK
+
+    /**
+     * A variable for canvas which will be initialized later and used.
+     *
+     *The Canvas class holds the "draw" calls. To draw something, you need 4 basic components: A Bitmap to hold the pixels, a Canvas to host
+     * the draw calls (writing into the bitmap), a drawing primitive (e.g. Rect,
+     * Path, text, Bitmap), and a paint (to describe the colors and styles for the
+     * drawing)
+     */
     private var canvas : Canvas? =null
+    private val mPaths = ArrayList<CustomPath>() // Array list for Paths
+    private val mUndoPaths = ArrayList<CustomPath>() // Array list for undo'ing paths
 
     // Initialize values from function
     init {
         setUpDrawing()
     }
 
+    /*
+    Function that removes previous path and assigns it to the undo path array
+     */
+    fun onClickUndo(){
+        // If mPaths has data greater than 0
+        if (mPaths.size > 0){
+            // Remove previous path and assign to mUndoPaths
+            mUndoPaths.add(mPaths.removeAt(mPaths.size -1))
+            invalidate()
+        }
+    }
+
+    /*
+    Function that redoes previous path if an undone path was created
+     */
+    fun onClickRedo(){
+        if (mUndoPaths.size > 0){
+            mPaths.add(mUndoPaths.removeAt(mUndoPaths.size - 1))
+            invalidate()
+        }
+    }
+
+    /**
+     * This method initializes the attributes of the
+     * ViewForDrawing class.
+     */
     private fun setUpDrawing(){
         mDrawPaint = Paint()
         mDrawPath = CustomPath(color, mBrushSize)
         mDrawPaint!!.color = color
+        // This is to draw a STROKE style
         mDrawPaint!!.style = Paint.Style.STROKE
+        // This is for store join
         mDrawPaint!!.strokeJoin = Paint.Join.ROUND
+        // This is for stroke Cap
         mDrawPaint!!.strokeCap = Paint.Cap.ROUND
+        // Paint flag that enables dithering when blitting.
         mCanvasPaint = Paint(Paint.DITHER_FLAG)
-        //mBrushSize = 20.toFloat() not needed as it is set in main activity
-
     }
 
     // This function is called once screen is changed in application
@@ -47,8 +90,11 @@ class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) 
         canvas = Canvas(mCanvasBitmap!!)
     }
 
-    // Function for when you draw on canvas
     // TODO change canvas to nullable is fails
+    /**
+     * This method is called when a stroke is drawn on the canvas
+     * as a part of the painting.
+     */
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         // Canvas calls the draw bitmap, passes the bitmap you want to use, sets start position
@@ -71,7 +117,10 @@ class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) 
 
     }
 
-    // What happens when the canvas is touched
+    /**
+     * This method acts as an event listener when a touch
+     * event is detected on the device.
+     */
     override fun onTouchEvent(event: MotionEvent?): Boolean {
 
         val touchX = event?.x
@@ -83,6 +132,7 @@ class DrawingView (context: Context, attrs: AttributeSet): View(context, attrs) 
                 mDrawPath!!.color = color
                 mDrawPath!!.brushThickness = mBrushSize
 
+                // Clear any lines and curves from the path, making it empty.
                 mDrawPath!!.reset()
 
                 // Creates start point
